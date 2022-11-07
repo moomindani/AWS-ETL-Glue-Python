@@ -8,7 +8,7 @@ During this process we will learn the following AWS services and PySpark:
 2. AWS Glue 
 3. AWS Glue Studio
 4. Amazon Athena 
-5. Amazon Quicksight
+5. Amazon QuickSight
 6. AWS SDK for Python 
 
 
@@ -34,6 +34,8 @@ unzip youtube-new.zip -d youtube-new
 
 This is the S3 location where we will store the RAW data, 
 - Name of the Bucket : `data-engg-etl-python` 
+
+Since S3 bucket name is globally unique, you need to replace the bucket name `data-engg-etl-python` with yours.
 
 ```bash
 
@@ -65,7 +67,7 @@ aws s3 cp US_category_id.json s3://data-engg-etl-python/dataset/raw_statistics_r
 
 ```
 
-## Create a AWS Glue Data Crawling 
+## Create a AWS Glue Data Catalog table using AWS Glue Crawler 
 
 
 1. Create an IAM Service role for AWS Glue 
@@ -75,7 +77,7 @@ aws s3 cp US_category_id.json s3://data-engg-etl-python/dataset/raw_statistics_r
 
 ![Img 1](img/1.png)
 
-2. Create a crawler for the raw statistics reference data 
+2. Create a Glue crawler for the raw statistics reference data 
     - Name : `etl-youtube-glue-crawler-01`
     - Database Name : `db_youtube_raw`
 
@@ -87,14 +89,14 @@ aws s3 cp US_category_id.json s3://data-engg-etl-python/dataset/raw_statistics_r
 ![Img 3](img/3.png)
 
 
-This is beacuse Athena is not able to read the data, and this is where we will learn about `Serializer and Deserializer` (JSON for ETL) and how we can clean the data
+This is because Athena is not able to read the data, and this is where we will learn about `Serializer and Deserializer` (JSON for ETL) and how we can clean the data
 
 ## Build the ETL Pipeline to transform JSON to Parquet (Data Cleaning)
 
 Tools that we are going to use to clean this data are:
 
 1. AWS Lambda 
-2. AWS Data Wrangler 
+2. AWS SDK for Pandas (a.k.a. AWS Data Wrangler)
 3. Amazon S3
 
 ![Img 4](img/4.png)
@@ -214,7 +216,7 @@ SELECT id, snippet_channelid FROM "db_youtube_cleansed"."cleansed_statistics_ref
 
 ## Analyze the historical data (BATCH Processing)
 
-1. Create a crawler 
+1. Create a Glue crawler 
     - Name : `etl-youtube-glue-crawler-raw-stat-01`
 
 2. Delete the old crawler which we created first which failed due to serializer
@@ -312,12 +314,6 @@ job = Job(glueContext)
 job.init(args["JOB_NAME"], args)
 
 # Script generated for node S3 bucket
-# S3bucket_node1 = glueContext.create_dynamic_frame.from_catalog(
-#     database="db_youtube_raw",
-#     table_name="raw_statistics",
-#     transformation_ctx="S3bucket_node1",
-# )
-
 predicate_pushdown = "region in ('ca','gb','us')"
 S3bucket_node1 = glueContext.create_dynamic_frame.from_catalog(
     database = "db_youtube_raw", 
@@ -371,7 +367,7 @@ job.commit()
 
 ## Create a Glue Crawler 
 
-1. Now create a AWS Glue crawler to crawl this newly transformed `cleansed_raw_statistics` data 
+1. Now create a Glue crawler to crawl this newly transformed `cleansed_raw_statistics` data 
     - Name of the crawler : `etl-youtube-glue-crawler-raw-data-cleased-01`
     - S3 Bucket : `s3://data-engg-etl-python/dataset/cleansed_raw_statistics`
     - Database : `db_youtube_cleansed`
@@ -467,9 +463,9 @@ SELECT ref.snippet_title, stats.*
 SELECT * FROM "db_youtube_analytics"."youtube_stat_catagories" limit 10;
 ```
 
-## Quicksight Dashboard
+## QuickSight Dashboard
 
-1. Go to quicksight 
+1. Go to QuickSight 
 2. Create a new `dataset` 
     - Name: `youtube_stat_catagories`
     - Database : `db_youtube_analytics`  
